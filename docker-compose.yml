@@ -13,6 +13,9 @@ services:
   api:                 # Application tier: FastAPI (not exposed to the host; only nginx talks to it)
     build: ./api
     env_file: .env
+    environment:       # set by the CI/CD pipeline on deploy; shown in the app footer
+      APP_VERSION: ${APP_VERSION:-dev}
+      GIT_SHA: ${GIT_SHA:-local}
     depends_on:
       db:
         condition: service_healthy

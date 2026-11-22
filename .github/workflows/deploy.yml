@@ -59,6 +59,7 @@ jobs:
             aws s3 cp s3://${{ secrets.S3_BUCKET }}/latest.zip ~/app/latest.zip
             cd ~/app
             unzip -o latest.zip
+            export APP_VERSION=${{ github.run_number }} GIT_SHA=${{ github.sha }}
             docker compose up --build -d
 
   verify:
@@ -69,3 +70,11 @@ jobs:
         run: |
           sleep 15
           curl --fail http://${{ secrets.EC2_HOST }}:8080 || exit 1
+          curl --fail http://${{ secrets.EC2_HOST }}:8080/api/health || exit 1
+
+      - name: Check the new build is the one running
+        run: |
+          live=$(curl --fail -s http://${{ secrets.EC2_HOST }}:8080/api/version)
+          echo "Live version: $live"
+          echo "$live" | grep -q '"version":"${{ github.run_number }}"' || {
+            echo "Expected build ${{ github.run_number }} to be live"; exit 1; }
