@@ -341,8 +341,7 @@ syncThemeLabel();
 // ---------- Build version (set by the CI/CD pipeline) ----------
 api("/version")
   .then((v) => {
-    const sha = v.commit.slice(0, 7);
-    $("version").textContent = v.version === "dev" ? "Local build" : `Build ${v.version} (${sha})`;
+    $("version").textContent = v.version === "dev" ? "Local build" : `v${v.version}`;
   })
   .catch(() => { $("version").textContent = ""; });
 
