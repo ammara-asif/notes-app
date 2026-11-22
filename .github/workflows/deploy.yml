@@ -43,4 +43,29 @@ jobs:
           zip -r build-${{ github.run_number }}.zip . \
             --exclude "*.git*" --exclude "*__pycache__*" --exclude "*.env*"
           aws s3 cp build-${{ github.run_number }}.zip s3://${{ secrets.S3_BUCKET }}/build-${{ github.run_number }}.zip
-          aws s3 cp build-${{
+          aws s3 cp build-${{ github.run_number }}.zip s3://${{ secrets.S3_BUCKET }}/latest.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws s3 cp s3://${{ secrets.S3_BUCKET }}/latest.zip ~/app/latest.zip
+            cd ~/app
+            unzip -o latest.zip
+            docker compose up --build -d
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check site is live
+        run: |
+          sleep 15
+          curl --fail http://${{ secrets.EC2_HOST }}:8080 || exit 1
